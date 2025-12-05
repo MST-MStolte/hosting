@@ -76,11 +76,11 @@
         // Maximum age of stored parameters (1 hour)
         const MAX_PARAM_AGE_MS = 60 * 60 * 1000;
 
-        // Retrieve parameters from sessionStorage
+        // Retrieve parameters from localStorage (works across tabs/windows)
         function getStoredLabToolParams() {
             try {
-                const paramsJson = sessionStorage.getItem('labToolParams');
-                const paramsTime = sessionStorage.getItem('labToolParamsTime');
+                const paramsJson = localStorage.getItem('labToolParams');
+                const paramsTime = localStorage.getItem('labToolParamsTime');
 
                 if (!paramsJson) {
                     console.warn('No stored lab tool parameters found');
@@ -92,8 +92,8 @@
                     const age = Date.now() - parseInt(paramsTime);
                     if (age > MAX_PARAM_AGE_MS) {
                         console.warn('Stored parameters are too old (> 1 hour)');
-                        sessionStorage.removeItem('labToolParams');
-                        sessionStorage.removeItem('labToolParamsTime');
+                        localStorage.removeItem('labToolParams');
+                        localStorage.removeItem('labToolParamsTime');
                         return null;
                     }
                 }
@@ -137,7 +137,7 @@
         // Redirect to Pavlovia experiment
         function redirectToExperiment() {
             const params = getStoredLabToolParams();
-            const isDirectAccess = sessionStorage.getItem('directAccess') === 'true';
+            const isDirectAccess = localStorage.getItem('directAccess') === 'true';
 
             if (isDirectAccess) {
                 // CASE 1: Direct access through shared link

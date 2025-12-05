@@ -79,10 +79,11 @@
                 }
 
                 // Store all parameters for later retrieval
-                sessionStorage.setItem('labToolParams', JSON.stringify(params));
+                // Using localStorage instead of sessionStorage to work across tabs/windows
+                localStorage.setItem('labToolParams', JSON.stringify(params));
 
                 // Store timestamp to detect if session is too old
-                sessionStorage.setItem('labToolParamsTime', Date.now().toString());
+                localStorage.setItem('labToolParamsTime', Date.now().toString());
 
                 console.log('Stored lab tool parameters:', params);
 
@@ -114,18 +115,19 @@
                 console.log('Direct access detected - no lab tool parameters');
 
                 // Store a flag to indicate no credits
-                sessionStorage.setItem('directAccess', 'true');
-                sessionStorage.removeItem('labToolParams'); // Make sure no old params exist
+                localStorage.setItem('directAccess', 'true');
+                localStorage.removeItem('labToolParams'); // Make sure no old params exist
             } else {
                 // Normal flow with lab tool parameters
                 document.getElementById('status').textContent = 'Redirecting to consent form...';
             }
 
             if (storeLabToolParams()) {
-                // Small delay to ensure storage completes
+                // DEBUG: Longer delay to see console messages
                 setTimeout(() => {
+                    console.log('About to redirect to Sway...');
                     window.location.href = SWAY_URL;
-                }, hasLabToolParams ? 500 : 2000); // Longer delay to show warning
+                }, 5000); // 5 seconds to check console
             }
         }
 
