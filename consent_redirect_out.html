@@ -113,7 +113,7 @@
             if (!params || Object.keys(params).length === 0) {
                 console.warn('No parameters to append to URL');
                 // Add cache-busting even without parameters
-                return `${PAVLOVIA_URL}?v=20251205-1750-labtool`;
+                return `${PAVLOVIA_URL}?v=20251205-1751-labtool`;
             }
 
             const urlParams = new URLSearchParams();
@@ -126,7 +126,7 @@
             }
 
             // Add cache-busting parameter to force latest version
-            urlParams.append('v', '20251205-1750-labtool');
+            urlParams.append('v', '20251205-1751-labtool');
 
             const url = `${PAVLOVIA_URL}?${urlParams.toString()}`;
             console.log('Built experiment URL:', url);
