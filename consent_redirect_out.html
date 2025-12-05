@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starting Experiment...</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 20px;
+        }
+        .info {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Thank you for providing consent!</h2>
+        <div class="spinner"></div>
+        <p>Starting the experiment...</p>
+        <p id="status" class="info"></p>
+        <div id="error" class="error" style="display: none;"></div>
+        <button id="manualButton" style="display: none;">Click here if not redirected</button>
+    </div>
+
+    <script>
+        // Pavlovia experiment URL
+        const PAVLOVIA_URL = 'https://run.pavlovia.org/mstolte/ib_rsvp_experiment';
+
+        // Maximum age of stored parameters (1 hour)
+        const MAX_PARAM_AGE_MS = 60 * 60 * 1000;
+
+        // Retrieve parameters from sessionStorage
+        function getStoredLabToolParams() {
+            try {
+                const paramsJson = sessionStorage.getItem('labToolParams');
+                const paramsTime = sessionStorage.getItem('labToolParamsTime');
+
+                if (!paramsJson) {
+                    console.warn('No stored lab tool parameters found');
+                    return null;
+                }
+
+                // Check if parameters are too old (session might have expired)
+                if (paramsTime) {
+                    const age = Date.now() - parseInt(paramsTime);
+                    if (age > MAX_PARAM_AGE_MS) {
+                        console.warn('Stored parameters are too old (> 1 hour)');
+                        sessionStorage.removeItem('labToolParams');
+                        sessionStorage.removeItem('labToolParamsTime');
+                        return null;
+                    }
+                }
+
+                const params = JSON.parse(paramsJson);
+                console.log('Retrieved stored parameters:', params);
+
+                return params;
+            } catch (error) {
+                console.error('Error retrieving stored parameters:', error);
+                return null;
+            }
+        }
+
+        // Build Pavlovia URL with parameters
+        function buildExperimentUrl(params) {
+            if (!params || Object.keys(params).length === 0) {
+                console.warn('No parameters to append to URL');
+                return PAVLOVIA_URL;
+            }
+
+            const urlParams = new URLSearchParams();
+
+            // Add all stored parameters
+            for (const [key, value] of Object.entries(params)) {
+                if (value) {
+                    urlParams.append(key, value);
+                }
+            }
+
+            const url = `${PAVLOVIA_URL}?${urlParams.toString()}`;
+            console.log('Built experiment URL:', url);
+
+            return url;
+        }
+
+        // Redirect to Pavlovia experiment
+        function redirectToExperiment() {
+            const params = getStoredLabToolParams();
+            const isDirectAccess = sessionStorage.getItem('directAccess') === 'true';
+
+            if (isDirectAccess) {
+                // CASE 1: Direct access through shared link
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').style.color = '#2c3e50';
+                document.getElementById('error').innerHTML =
+                    '<strong>Direct Access Mode</strong><br>' +
+                    'You are participating without course credit registration.<br>' +
+                    'Your data will still be collected for research purposes.';
+
+                document.getElementById('status').textContent =
+                    'Starting experiment (no credit mode)';
+
+                console.log('Direct access mode - no lab tool redirect will occur');
+            } else if (!params) {
+                // Session data lost (browser closed/reopened)
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML =
+                    '<strong>Warning:</strong> Lab tool session data not found.<br>' +
+                    'You may not receive credit for this participation.<br>' +
+                    'This can happen if you closed and reopened the browser.<br><br>' +
+                    'Continuing to experiment anyway...';
+
+                document.getElementById('status').textContent =
+                    'Proceeding without lab tool parameters';
+            } else if (!params.tid || !params.access_key) {
+                // Incomplete parameters
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML =
+                    '<strong>Warning:</strong> Required parameters (tid/access_key) are missing.<br>' +
+                    'You may not receive credit for this participation.';
+
+                document.getElementById('status').textContent =
+                    'Proceeding with incomplete parameters';
+            } else {
+                // Normal flow with complete parameters
+                document.getElementById('status').textContent =
+                    `Session ID: ${params.tid.substring(0, 8)}...`;
+            }
+
+            const experimentUrl = buildExperimentUrl(params);
+
+            // Show manual button after 3 seconds (in case auto-redirect fails)
+            setTimeout(() => {
+                const button = document.getElementById('manualButton');
+                button.style.display = 'inline-block';
+                button.onclick = () => {
+                    window.location.href = experimentUrl;
+                };
+            }, 3000);
+
+            // Auto-redirect after brief delay
+            setTimeout(() => {
+                window.location.href = experimentUrl;
+            }, 1500);
+        }
+
+        // Execute on page load
+        redirectToExperiment();
+    </script>
+</body>
+</html>
